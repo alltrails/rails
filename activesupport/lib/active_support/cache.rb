@@ -616,7 +616,7 @@ module ActiveSupport
 
       def value
         convert_version_4beta1_entry! if defined?(@v)
-        compressed? ? uncompress(@value) : Marhsal.load(@value) rescue @value
+        compressed? ? uncompress(@value) : Marshal.load(@value) rescue @value
       end
 
       # Check if the entry is expired. The +expires_in+ parameter can override
