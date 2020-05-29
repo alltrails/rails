@@ -405,11 +405,11 @@ module ActiveSupport
       def write(name, value, options = nil)
         options = merged_options(options)
 
-        if !(Rails.env.test? || Rails.env.development?) && ENV['REDIS_SNS_ARN']
-          puts "thats a thing! #{name} : #{value}"
+        if ENV['REDIS_SNS_ARN'].present?
+          Rails.logger.error "thats a thing! #{name} : #{value}"
           publish_to_sns(ENV['REDIS_SNS_ARN'], name, value, options)
         else
-          puts "normal write"
+          Rails.logger.error "normal write"
           instrument(:write, name, options) do
             entry = Entry.new(value, options)
             write_entry(namespaced_key(name, options), entry, options)
