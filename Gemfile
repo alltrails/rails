@@ -41,6 +41,7 @@ gem 'uglifier', '>= 1.3.0', "< 4.0.0", require: false
 
 # mime-types 3 only support ruby >= 2
 gem 'mime-types', '< 3', require: false
+gem 'aws-sdk-sns', '~> 1', require: false
 
 group :doc do
   gem 'sdoc', '~> 0.4.0'

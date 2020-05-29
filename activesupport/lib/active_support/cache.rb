@@ -9,6 +9,7 @@ require 'active_support/core_ext/numeric/time'
 require 'active_support/core_ext/object/to_param'
 require 'active_support/core_ext/string/inflections'
 require 'active_support/deprecation'
+require 'aws-sdk-sns'
 
 module ActiveSupport
   # See ActiveSupport::Cache::Store for documentation.
@@ -380,15 +381,39 @@ module ActiveSupport
         end
       end
 
+      def publish_to_sns(arn, key, value, options)
+        # all cache writes will be sent as json stringified to be easily deserialized in the Lambda
+        json_body = {
+          :key => key,
+          :value => value,
+          :options => options
+        }
+        client = get_sns_client
+        resp = client.publish({
+          target_arn: arn,
+          message: json_body.to_json,
+        })
+      end
+      # client must be in us-west-1 for now to match the SNS topic ARN
+      def get_sns_client
+        Aws::SNS::Client.new(region: "us-west-1")
+      end
+
       # Writes the value to the cache, with the key.
       #
       # Options are passed to the underlying cache implementation.
       def write(name, value, options = nil)
         options = merged_options(options)
 
-        instrument(:write, name, options) do
-          entry = Entry.new(value, options)
-          write_entry(namespaced_key(name, options), entry, options)
+        if !(Rails.env.test? || Rails.env.development?) && ENV['REDIS_SNS_ARN']
+          puts "thats a thing! #{name} : #{value}"
+          publish_to_sns(ENV['REDIS_SNS_ARN'], name, value, options)
+        else
+          puts "normal write"
+          instrument(:write, name, options) do
+            entry = Entry.new(value, options)
+            write_entry(namespaced_key(name, options), entry, options)
+          end
         end
       end
 
